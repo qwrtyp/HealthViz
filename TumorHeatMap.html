@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<html>
+  <head>
+    <style>
+      rect.bordered {
+        stroke: #E6E6E6;
+        stroke-width:2px;   
+      }
+
+      text.mono {
+        font-size: 9pt;
+        font-family: Consolas, courier;
+        fill: #aaa;
+      }
+
+      text.axis-tumorB {
+        fill: #000;
+      }
+
+      text.axis-tumorA {
+        fill: #000;
+      }
+    </style>
+    <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+	<script src="http://d3js.org/colorbrewer.v1.min.js"></script>
+  </head>
+  <body>
+    <div id="chart"></div>
+
+    <script type="text/javascript">
+      var margin = { top: 50, right: 50, bottom: 50, left: 50 },
+          width = 960 - margin.left - margin.right,
+          height = 800 - margin.top - margin.bottom,
+          gridSize = Math.floor(width / 22),
+          legendElementWidth = gridSize * 1.6,
+          colorBrewerbuckets = 9,
+		  colors = colorbrewer.RdYlBu[colorBrewerbuckets].reverse(),
+		  startingColor = "#FFFFFF";
+		  
+      d3.csv("data.csv",
+        function(d) {
+          return {
+            tumorA: d.tumorA,
+            tumorB: d.tumorB,
+            distance: +d.distance
+          };
+        },
+        function(error, data) {
+			var svg = d3.select("#chart").append("svg")
+              .attr("width", width + margin.left + margin.right)
+              .attr("height", height + margin.top + margin.bottom)
+              .append("g")
+              .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+		
+		  // Alternative bucketed colors
+          var colorScaleQuant = d3.scale.quantile()
+              .domain([d3.min(data, function (d) { return d.distance; }), d3.max(data, function (d) { return d.distance; })])
+			  .range(colors);
+		
+		  var colorScale = d3.scale.linear()
+              .domain([d3.min(data, function (d) { return d.distance; }), d3.max(data, function (d) { return d.distance; })])
+			  .range([colors[0], colors[8]]);
+
+          var dayLabels = svg.selectAll(".tumorBLabel")
+              .data(data)
+              .enter().append("text")
+                .text(function (d, i) { return (i > (Math.sqrt(data.length) - 1) ? "" : d.tumorB); })
+                .attr("x", 0)
+                .attr("y", function (d, i) { return i * gridSize; })
+                .style("text-anchor", "end")
+                .attr("transform", "translate(-6," + gridSize / 1.5 + ")")
+                .attr("class", function (d, i) { return "tumorBLabel mono axis axis-tumorB"; });
+
+          var timeLabels = svg.selectAll(".tumorALabel")
+              .data(data)
+              .enter().append("text")
+                .text(function(d, i) { return (i > (Math.sqrt(data.length) - 1) ? "" : d.tumorB); })
+                .attr("x", function(d, i) { return i * gridSize; })
+                .attr("y", 0)
+                .style("text-anchor", "middle")
+                .attr("transform", "translate(" + gridSize / 2 + ", -6)")
+                .attr("class", function(d, i) { return "tumorALabel mono axis axis-tumorA"; });
+
+          var heatMap = svg.selectAll(".distance")
+              .data(data)
+              .enter().append("rect")
+              .attr("x", function(d, i) { return i % Math.sqrt(data.length) * gridSize; })
+              .attr("y", function(d, i) { return Math.floor(i / Math.sqrt(data.length)) * gridSize; })
+              .attr("rx", 4)
+              .attr("ry", 4)
+              .attr("class", "distance bordered")
+              .attr("width", gridSize)
+              .attr("height", gridSize)
+              .style("fill", startingColor);
+
+          heatMap.transition().duration(1000)
+              .style("fill", function(d) { return colorScaleQuant(d.distance); });
+
+          heatMap.append("title").text(function(d) { return d.distance; });
+              
+          var legend = svg.selectAll(".legend")
+		  .data([0].concat(colorScaleQuant.quantiles()), function(d) { return d; })
+              .enter().append("g")
+              .attr("class", "legend");
+
+          legend.append("rect")
+            .attr("x", function(d, i) { return legendElementWidth * i; })
+            .attr("y", height)
+            .attr("width", legendElementWidth)
+            .attr("height", gridSize / 2)
+            .style("fill", function(d, i) { return colors[i]; });
+
+          legend.append("text")
+            .attr("class", "mono")
+            .text(function(d) { return "= " + Math.round(d); })
+            .attr("x", function(d, i) { return legendElementWidth * i; })
+            .attr("y", height + gridSize);
+      });
+    </script>
+  </body>
+</html>
