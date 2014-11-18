@@ -38,7 +38,7 @@
 		  colors = colorbrewer.RdYlGn[colorBrewerbuckets].reverse(),
 		  startingColor = "#FFFFFF";
 		  
-      d3.csv("data.csv",
+      d3.csv("dataNorm.csv",
         function(d) {
           return {
             tumorA: d.tumorA,
@@ -113,7 +113,7 @@
 
           legend.append("text")
             .attr("class", "mono")
-            .text(function(d) { return "= " + Math.round(d); })
+            .text(function(d) { return "= " + Math.round(d * 100) / 100; })
             .attr("x", function(d, i) { return legendElementWidth * i; })
             .attr("y", height + gridSize);
       });
